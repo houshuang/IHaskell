@@ -26,6 +26,7 @@ import Filesystem.Path.CurrentOS (encodeString)
 import System.Posix.IO
 import System.IO (hGetChar, hFlush)
 import System.Random (getStdGen, randomRs)
+import Text.Regex (mkRegex, subRegex)
 import Unsafe.Coerce
 import Control.Monad (guard)
 import System.Process
@@ -229,13 +230,16 @@ data EvalOut = EvalOut {
     evalComms :: [CommInfo]
   }
 
+clean :: String -> String
+clean x = strip $ subRegex (mkRegex "^> *") x ""
+
 -- | Evaluate some IPython input code.
 evaluate :: KernelState                  -- ^ The kernel state.
          -> String                       -- ^ Haskell code or other interpreter commands.
          -> (EvaluationResult -> IO ())   -- ^ Function used to publish data outputs.
          -> Interpreter KernelState
 evaluate kernelState code output = do
-  cmds <- parseString (strip code)
+  cmds <- parseString (clean code)
   let execCount = getExecutionCounter kernelState
 
   when (getLintStatus kernelState /= LintOff) $ liftIO $ do
